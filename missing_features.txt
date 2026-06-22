@@ -1,0 +1,7 @@
+| **Conversational Chatbot** | ❌ **MISSING** | No chatbot endpoint exists. No conversational/multi-turn chat API. |
+| **Expected Salary Prediction** | ❌ **MISSING** | No salary prediction model or endpoint. Offers have `salary_offered` but it's manually set by HR. |
+| **Automated Email Pipeline** | ❌ **MISSING** | No email sending service (no SMTP, no SendGrid, no email templates). Offers are created but no notification emails sent. |
+| **Video Interview Assessment** | ❌ **MISSING** | No video upload/processing endpoint. Only webcam snapshots (single frame emotion analysis) |
+| **Offer Acceptance Prediction** | ❌ **MISSING** | No predictive model for offer acceptance. Offers are simple CRUD (pending/accepted/declined). |
+| **Employee Attrition Prediction** | ❌ **MISSING** | No attrition prediction model or endpoint exists anywhere in the codebase. |
+| Category | Implemented | Partial | Missing | Total |

@@ -1,0 +1,176 @@
+## Frontend Audit Report — AI Hiring Assistant
+
+I have read **every single file** in the frontend. Here is the complete audit.
+
+---
+
+### 1. FILE-BY-FILE INVENTORY & DESCRIPTION
+
+#### App Pages (Routes)
+
+| # | File | Lines | What It Does |
+|---|------|-------|-------------|
+| 1 | `app/page.tsx` | 368 | **Landing page.** Hero section, features grid (6 features), animated partner marquee, pipeline demo (4 steps), CountUp stats, CTA section, footer. Uses NeuralNetwork3D background canvas, GlassCard, Button. Links to `/login` and `/register`. |
+| 2 | `app/layout.tsx` | 32 | **Root layout.** Wraps app in LenisProvider (smooth scroll), ThemeRoot (theme CSS class + CommandPalette), BackgroundEffects (canvas particles), CustomCursor. Inter font, dark bg. |
+| 3 | `app/globals.css` | 260 | **Global styles.** 4 theme CSS variable sets (dark, light, midnight, glass). Glassmorphism classes, shimmer animation, float animation, gradient-shift, scrollbar styling, GPU-accelerated helpers. |
+| 4 | `app/login/page.tsx` | 145 | **Login page.** Email/password form with role tabs (candidate/hr). Uses authStore.login(). Redirects HR→`/dashboard`, candidate→`/resume-upload`. Glass card with blobs background. |
+| 5 | `app/register/page.tsx` | 179 | **Registration page.** Full name, email, password, confirm password. Role selector (candidate/hr). Uses authStore.register(). Same redirect logic as login. |
+| 6 | `app/resume-upload/page.tsx` | 364 | **Resume Upload (candidate).** AuthGuard(candidate). FileUpload dropzone (PDF/DOCX). Resume list with status badges. Right panel: parsed data viewer (name, email, phone, skills badges, education, experience). "Execute AI Parsing" button calls `/resumes/{id}/parse`. "Extract & Sync Skills" button. Animated laser scanning overlay during parsing. |
+| 7 | `app/interview/page.tsx` | 303 | **Interview Bot (candidate).** AuthGuard(candidate). Setup panel: interview type toggle (technical/HR), job selector, category selector (for technical), difficulty (easy/medium/hard). Start button calls interviewStore.startInterview(). When in_progress → renders `InterviewPanel`. When completed → shows score ProgressRing, feedback text, "Take Another" button. |
+| 8 | `app/dashboard/page.tsx` | 377 | **HR Dashboard.** Uses dashboardStore. 5 StatCards row (Total Candidates, Active Jobs, Interviews, Avg Match Score with ProgressRing, Top Fit Rate). FunnelChart + SkillRadar row. MatchChart (score histogram) + Top Matches leaderboard with ProgressRings. Fraud/Security alert log widget. Offer Dispatcher form (candidate ID, job ID, salary). |
+| 9 | `app/dashboard/layout.tsx` | 27 | **Dashboard layout wrapper.** AuthGuard(hr), Sidebar, Header("HR Recruiter Dashboard"). |
+| 10 | `app/job-matching/page.tsx` | 276 | **Job Matching (candidate).** AuthGuard(candidate). "Run AI Matcher Engine" button. Lists match results with job title, company, location, skill gap analysis text, matched/missing skill badges, ProgressRing suitability score, recommendation badge. Right sidebar: candidate's own skill map. |
+| 11 | `app/candidate-ranking/page.tsx` | 276 | **Candidate Ranking (HR).** AuthGuard(hr). Job selector dropdown. "Recalculate Leaderboard" button. Full ranking table: rank medals (gold/silver/bronze), candidate avatar/name, resume score, skill match, experience score, interview score, overall ProgressRing, recommendation badge. |
+| 12 | `app/schedule/page.tsx` | 197 | **Schedule page.** Create interview schedule form (candidate ID, job ID, datetime, duration, meeting link). Lists upcoming scheduled interviews with status badges. **NOTE: Missing `'use client'` directive and missing AuthGuard/Sidebar/Header — this page will NOT render properly as a standalone route. It appears designed to be embedded within the dashboard layout but lacks proper wrapping.** |
+| 13 | `app/analytics/page.tsx` | 246 | **Hiring Analytics (HR).** AuthGuard(hr). Date range filter (7/30/90 days/all). Export Report button (stub: just alerts). Full-width FunnelChart. SkillRadar + MatchChart row. AreaChart for applicant growth & interview trends (recharts). Interview breakdown panel (avg score, technical sessions count, HR sessions count). |
+
+#### Types
+| # | File | Lines | What It Does |
+|---|------|-------|-------------|
+| 14 | `types/index.ts` | 269 | All TypeScript interfaces: User, Candidate, AuthResponse, Resume, ParsedResume, Education, Experience, Project, Job, Skill, CandidateSkill, GenerateInterviewResponse, GeneratedQuestion, Interview, InterviewResult, MatchResult, Ranking, DashboardStats, DashboardAnalytics, FraudAlert, Offer, ApiError, InterviewSchedule. |
+
+#### Lib — API Layer
+| # | File | Lines | What It Does |
+|---|------|-------|-------------|
+| 15 | `lib/api/client.ts` | 76 | Axios instance at `http://localhost:8000/api`. 60s default timeout. Request interceptor adds Bearer token from localStorage. Response interceptor handles 401 → redirect to login. `handleApiError()` utility. |
+| 16 | `lib/api/endpoints.ts` | 234 | All API endpoint functions: `auth` (login/register/getMe), `resumes` (upload/list/parse), `skills` (extract/list), `jobs` (list/getById/create/analyze/importDataset), `matching` (matchCandidate/getCandidateMatches), `rankings` (getByJob/getTop), `interviews` (generate/evaluate/getById/complete/getCategories/**voiceInterview**/**emotionAnalysis**), `dashboard` (getStats/getAnalytics), `offers` (create/getByCandidate/respond), `schedules` (create/list/updateStatus). |
+
+#### Lib — Utilities
+| # | File | Lines | What It Does |
+|---|------|-------|-------------|
+| 17 | `lib/utils.ts` | 84 | Utility functions: `cn()` (clsx wrapper), `formatDate()`, `formatScore()`, `getRecommendationColor()`, `getStatusColor()`, `truncateText()`, `formatFileSize()`. |
+
+#### Lib — Zustand Stores
+| # | File | Lines | What It Does |
+|---|------|-------|-------------|
+| 18 | `lib/store/authStore.ts` | 133 | Auth state: user, token, candidate, isAuthenticated. Actions: login, register, logout, checkAuth, setUser. Persists token in localStorage. |
+| 19 | `lib/store/dashboardStore.ts` | 40 | Dashboard state: stats, analytics. Actions: fetchStats, fetchAnalytics. |
+| 20 | `lib/store/interviewStore.ts` | 182 | Interview state: currentInterview, questions, currentQuestionIndex, answers, evaluations. Actions: startInterview, submitAnswer, **submitVoiceAnswer** (with audioBlob + optional emotionBlob), nextQuestion, previousQuestion, completeInterview, reset. Handles both GenerateInterviewResponse and Interview shapes. |
+| 21 | `lib/store/themeStore.ts` | 25 | Theme state: theme (dark/light/midnight/glass). Toggles CSS class on `<html>`. Persists in localStorage. |
+
+#### Components — Charts
+| # | File | Lines | What It Does |
+|---|------|-------|-------------|
+| 22 | `charts/FunnelChart.tsx` | 77 | Horizontal bar chart (recharts). Applied→Screened→Interviewed→Offered→Hired. Color-coded bars with custom tooltip. |
+| 23 | `charts/MatchChart.tsx` | 84 | Vertical bar chart (recharts). Score range distribution (0-49, 50-59, etc.). Gradient fill bars. |
+| 24 | `charts/SkillRadar.tsx` | 56 | Radar chart (recharts). Shows skill distribution across taxonomy (Python, React, Docker, etc.). |
+
+#### Components — Interview
+| # | File | Lines | What It Does |
+|---|------|-------|-------------|
+| 25 | `interview/ChatBubble.tsx` | 55 | Chat bubble component. isUser → gradient indigo/purple (right-aligned), AI → glass card (left-aligned). Score badge on AI messages. Timestamp display. |
+| 26 | `interview/InterviewPanel.tsx` | 582 | **Full interview experience.** Two modes: **Voice AI** and **Text Mode**. Voice mode: mic recording with MediaRecorder API, animated waveform bars, audio preview, submit audio. **Webcam integration**: getUserMedia video stream, face analytics feed with webcam viewport, facial alignment indicators, emotion telemetry display, snapshot capture for emotion analysis. Text mode: textarea with submit. Per-question evaluation display with ProgressRing score + feedback. Navigation (prev/next/finalize). Progress bar. |
+
+#### Components — Layout
+| # | File | Lines | What It Does |
+|---|------|-------|-------------|
+| 27 | `layout/AuthGuard.tsx` | 63 | Auth gate. Checks auth on mount. Shows loading spinner. Redirects unauthenticated→`/login`, role mismatch→appropriate page. Blur-in animation on content reveal. |
+| 28 | `layout/Header.tsx` | 64 | Sticky header. Page title, search bar (triggers Ctrl+K CommandPalette), notification bell, user avatar. |
+| 29 | `layout/Sidebar.tsx` | 216 | Navigation sidebar. Role-filtered menu items (Dashboard, Resume Upload, Job Matching, Candidate Ranking, Interview Bot, Analytics). Active item highlight with layoutId animation. User profile section + logout. Mobile hamburger drawer. |
+| 30 | `layout/LenisProvider.tsx` | 29 | Lenis smooth scroll provider wrapper. |
+| 31 | `layout/ThemeRoot.tsx` | 27 | Theme wrapper. Syncs from localStorage. Renders CommandPalette globally. |
+
+#### Components — UI
+| # | File | Lines | What It Does |
+|---|------|-------|-------------|
+| 32 | `ui/BackgroundEffects.tsx` | 360 | Full-screen canvas. 5-layer rendering: ambient glowing blobs, parallax grid, flowing particles with mouse displacement, neural network nodes with synapse connections, cursor spotlight halo. Theme-aware colors. |
+| 33 | `ui/Button.tsx` | 118 | Button with 4 variants (primary/secondary/ghost/danger), 3 sizes. Magnetic spring hover effect (framer-motion). Loading spinner state. |
+| 34 | `ui/CommandPalette.tsx` | 289 | `Ctrl+K` command palette overlay. Navigation commands (role-filtered), theme switching (4 themes), logout. Keyboard navigation (↑↓ arrows, Enter, Escape). Search filtering. |
+| 35 | `ui/CustomCursor.tsx` | 85 | Custom cursor with inner dot + outer spring-based aura ring. Enlarges on interactive elements. Hidden on mobile. |
+| 36 | `ui/FileUpload.tsx` | 192 | Drag & drop file upload. react-dropzone (PDF/DOCX). Progress bar simulation. Status states (idle/uploading/success/error). Calls `http://localhost:8000/api/resumes/upload`. |
+| 37 | `ui/GlassCard.tsx` | 117 | Glassmorphism card with optional 3D hover tilt (perspective rotateX/rotateY), dynamic light reflection spot, gradient border variant. |
+| 38 | `ui/Input.tsx` | 76 | Input component with label, icon prefix, error message animation. |
+| 39 | `ui/NeuralNetwork3D.tsx` | 206 | 3D neural network canvas (landing page only). 100 nodes in a sphere with 3D rotation, perspective projection, synapse connections, mouse attraction. Theme-aware colors. |
+| 40 | `ui/ProgressRing.tsx` | 73 | SVG circular progress ring. Gradient stroke (indigo→violet→fuchsia). Animated stroke-dashoffset. Center percentage label. |
+| 41 | `ui/SkillBadge.tsx` | 46 | Pill badge for skills. Green for matched, gray for unmatched. Pulse dot indicator. Hover tooltip for proficiency level. |
+| 42 | `ui/StatCard.tsx` | 82 | Dashboard stat card. CountUp animated number. Icon with gradient bg. Optional trend indicator. |
+
+#### Config Files
+| # | File | What It Does |
+|---|------|-------------|
+| 43 | `package.json` | Next.js 15, React 19, framer-motion 11, recharts, zustand 5, axios, react-dropzone, react-countup, lenis, gsap, lucide-react, tailwindcss 3.4 |
+| 44 | `tailwind.config.ts` | Custom theme: glass colors, surface colors, accent colors, gradient backgrounds, float/glow/shimmer animations, backdrop blur xs, 4xl border radius |
+| 45 | `next.config.ts` | Allows remote images from localhost:8000 |
+
+#### Missing Directories
+| Item | Status |
+|------|--------|
+| `hooks/` | Directory exists but is **EMPTY** — no custom hooks implemented |
+
+---
+
+### 2. FEATURE EXISTENCE AUDIT
+
+#### ✅ EXISTS — Fully Implemented
+
+| Feature | Page/Component | Details |
+|---------|---------------|---------|
+| **Landing Page** | `app/page.tsx` | Full hero, features, pipeline demo, stats, CTA |
+| **Login** | `app/login/page.tsx` | Email/password, role tabs, error handling |
+| **Registration** | `app/register/page.tsx` | Full name, email, password, role selector |
+| **Resume Upload UI** | `app/resume-upload/page.tsx` + `FileUpload.tsx` | Drag & drop, file list, parsed data viewer, AI parsing trigger, skill extraction |
+| **Interview UI (Text Mode)** | `app/interview/page.tsx` + `InterviewPanel.tsx` | Setup panel, text input, per-question AI evaluation, completion summary |
+| **Interview UI (Voice Mode)** | `InterviewPanel.tsx` | MediaRecorder audio recording, waveform visualization, audio preview, submit audio for transcription |
+| **Video Interview UI (Webcam)** | `InterviewPanel.tsx` | getUserMedia webcam stream, face analytics viewport, snapshot capture for emotion analysis, alignment indicators, emotion telemetry panel |
+| **Dashboard (HR)** | `app/dashboard/page.tsx` | 5 stat cards, funnel chart, skill radar, match histogram, top matches leaderboard, fraud alerts, offer dispatcher |
+| **Job Matching Page** | `app/job-matching/page.tsx` | Run matcher engine, match results with scores, matched/missing skills, skill gap analysis, recommendation badges |
+| **Candidate Ranking Page** | `app/candidate-ranking/page.tsx` | Job selector, ranking table with medals, multi-dimensional scores, recommendations |
+| **Analytics Page** | `app/analytics/page.tsx` | Date filter, funnel, skill radar, match distribution, area chart trends, interview breakdown |
+| **Schedule Page** | `app/schedule/page.tsx` | Create schedule form, upcoming interviews list |
+| **Hiring Funnel Widget** | `FunnelChart.tsx` | Applied→Screened→Interviewed→Offered→Hired bar chart |
+| **Skill Radar Widget** | `SkillRadar.tsx` | Radar chart for skill distribution |
+| **Match Score Distribution** | `MatchChart.tsx` | Histogram bar chart |
+| **Compatibility Score** | `ProgressRing.tsx` | Used throughout for match/interview/ranking scores |
+| **Fraud/Security Alerts** | `dashboard/page.tsx` | Fraud alert log with candidate names, risk scores, reasons |
+| **Offer Dispatcher** | `dashboard/page.tsx` | Form to send offers (candidate ID, job ID, salary) |
+| **Command Palette** | `CommandPalette.tsx` | Ctrl+K navigation + theme switching |
+| **Multi-Theme System** | 4 themes (dark/light/midnight/glass) | Full CSS variable system + canvas bg adaptation |
+| **Auth System** | `authStore.ts` + `AuthGuard.tsx` | Role-based routing, token management, session verification |
+| **API Layer** | `client.ts` + `endpoints.ts` | Complete API coverage including voice interview + emotion analysis endpoints |
+
+#### ⚠️ EXISTS but with Issues
+
+| Feature | Issue |
+|---------|-------|
+| **Schedule Page** | Missing `'use client'` directive. Missing Sidebar/Header/AuthGuard wrapping — won't render properly as standalone route. Appears to be designed for dashboard layout embedding but lacks proper integration. |
+| **ChatBubble Component** | Component exists but is **NOT used anywhere** in the codebase. The InterviewPanel renders inline evaluation cards instead of a chat-style conversation flow. |
+
+#### ❌ MISSING — Not Implemented
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| **Chatbot UI** | ❌ MISSING | No standalone chatbot/conversational AI page exists. The interview uses a question-by-question format, NOT a freeform chat interface. ChatBubble component exists but is unused. |
+| **Skill Gap Analysis Page** | ❌ MISSING | No dedicated `/skill-gap` route. Skill gap analysis text appears inline within job matching results only. No dedicated visualization or detailed breakdown page. |
+| **Salary Prediction Page** | ❌ MISSING | No salary prediction feature anywhere. The dashboard offer form has a manual salary input, but there's no ML-based salary prediction/estimation page. |
+| **Email Pipeline Management** | ❌ MISSING | No email management, email templates, automated outreach, or email tracking UI anywhere in the frontend. The Offer Dispatcher only creates offers via API — no email workflow. |
+| **Pipeline Widget (Kanban/Board)** | ❌ MISSING | No drag-and-drop pipeline board / kanban view. The funnel chart shows aggregate counts but there's no interactive candidate pipeline management board. |
+| **Interview Reports Page** | ❌ MISSING | No dedicated page to browse/review past interview results. Completed interviews show a summary inline, but there's no historical interview reports browsable list for HR. |
+| **Custom Hooks** | ❌ MISSING | `hooks/` directory is completely empty. No useDebounce, useMediaQuery, useIntersectionObserver, etc. |
+| **Job Management (CRUD)** | ❌ MISSING | API endpoints for job create/analyze/import exist, but no frontend page to create/edit/manage job postings. Jobs are only consumed (not created) in the UI. |
+| **Candidate Profile Page** | ❌ MISSING | No candidate profile/settings page. Candidate info only appears in parsed resume data. |
+| **Offers Management (Candidate View)** | ❌ MISSING | API has `offers.getByCandidate()` and `offers.respond()` but no candidate-facing page to view/accept/decline offers. |
+| **Notifications System** | ❌ MISSING | Header has a notification bell with a static pulse dot but no actual notification dropdown or notification data/API integration. |
+
+---
+
+### 3. SUMMARY STATISTICS
+
+- **Total files read**: 45
+- **Total lines of frontend code**: ~6,800+ lines
+- **Pages**: 10 routes (landing, login, register, resume-upload, interview, dashboard, job-matching, candidate-ranking, schedule, analytics)
+- **Components**: 21 components across 4 subdirectories
+- **Stores**: 4 Zustand stores (auth, dashboard, interview, theme)
+- **API endpoints defined**: 30+ endpoint functions
+- **Types**: 20+ TypeScript interfaces
+- **Dependencies**: 13 production deps, 7 dev deps
+
+### 4. KEY ARCHITECTURAL NOTES
+
+1. **State management**: Zustand (not Redux). Clean store pattern.
+2. **Styling**: Tailwind CSS + CSS variables for theming. No CSS modules or styled-components.
+3. **Animation**: Framer Motion everywhere (page transitions, cards, progress rings, sidebar).
+4. **Charts**: Recharts (BarChart, RadarChart, AreaChart). No d3.js.
+5. **Canvas effects**: Two custom canvas renderers (BackgroundEffects 5-layer particle system, NeuralNetwork3D for landing page).
+6. **Auth**: JWT Bearer token in localStorage. Role-based routing (hr/candidate).
+7. **API base**: Hardcoded to `http://localhost:8000/api` — needs env variable for production.
+8. **Voice/Video**: InterviewPanel has full WebRTC-style implementation with MediaRecorder for audio and getUserMedia for webcam — these are functional, not stubs.
