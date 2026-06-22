@@ -73,13 +73,7 @@ export default function FileUpload({ onUploadComplete, onUploadStart, className 
     body: formData,
   }
 );
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
+        
       clearInterval(interval);
 
       if (!res.ok) {
