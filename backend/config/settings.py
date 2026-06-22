@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     # --- CORS ---
     CORS_ORIGINS: list[str] = [
     "http://localhost:3000",
-    "https://ai-hiring-suite-s4cs-5mfo9b59b.vercel.app",
+    "https://ai-hiring-suite-s4cs.vercel.app",
 ]
 
     model_config = SettingsConfigDict(
