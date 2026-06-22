@@ -60,7 +60,7 @@ export default function CandidateRankingPage() {
     setIsRecalculating(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const res = await fetch(`http://localhost:8000/api/rankings/calculate/${selectedJobId}`, {
+      const res = await fetch(`/api/rankings/calculate/${selectedJobId}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });

@@ -26,7 +26,7 @@ export default function JobMatchingPage() {
     const token = localStorage.getItem('auth_token');
     try {
       setIsLoading(true);
-      const meRes = await fetch('http://localhost:8000/api/auth/me', {
+      const meRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (meRes.ok) {
@@ -57,7 +57,8 @@ export default function JobMatchingPage() {
     const token = localStorage.getItem('auth_token');
     try {
       setIsMatching(true);
-      const meRes = await fetch('http://localhost:8000/api/auth/me', {
+      const meRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
+
         headers: { Authorization: `Bearer ${token}` }
       });
       if (meRes.ok) {
@@ -270,6 +271,6 @@ export default function JobMatchingPage() {
 // Fallback dynamic mapping if getCandidateSkills doesn't exist
 if (!(skillsApi as any).getCandidateSkills) {
   (skillsApi as any).getCandidateSkills = (candId: number) => {
-    return fetch(`http://localhost:8000/api/skills/candidate/${candId}`).then((r) => r.json());
+    return fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/skills/candidate/${candId}`).then((r) => r.json());
   };
 }

@@ -24,7 +24,9 @@ export const useChatbotStore = create<ChatbotState>((set, get) => ({
     try {
       const { sessionId } = get();
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/chatbot`, {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+
+const response = await fetch(`${API_URL}/api/chatbot`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

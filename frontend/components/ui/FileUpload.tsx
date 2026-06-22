@@ -63,7 +63,16 @@ export default function FileUpload({ onUploadComplete, onUploadStart, className 
         });
       }, 150);
 
-      const res = await fetch('http://localhost:8000/api/resumes/upload', {
+      const res = await fetch(
+  `${process.env.NEXT_PUBLIC_API_URL}/api/resumes/upload`,
+  {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  }
+);
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
