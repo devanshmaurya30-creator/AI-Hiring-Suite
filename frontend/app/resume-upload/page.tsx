@@ -56,7 +56,7 @@ export default function ResumeUploadPage() {
   const fetchResumeDetails = async (id: number) => {
     try {
       const token = localStorage.getItem('auth_token');
-      const res = await fetch(`process.env.NEXT_PUBLIC_API_URL/api/resumes/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/resumes/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
