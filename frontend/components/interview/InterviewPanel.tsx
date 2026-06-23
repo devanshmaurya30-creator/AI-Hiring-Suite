@@ -108,8 +108,14 @@ export default function InterviewPanel() {
       });
       videoStreamRef.current = stream;
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
+  videoRef.current.srcObject = stream;
+
+  try {
+    await videoRef.current.play();
+  } catch (err) {
+    console.error("Video play failed:", err);
+  }
+}
       setCameraActive(true);
     } catch (err) {
       console.warn('Webcam access denied or unavailable:', err);
